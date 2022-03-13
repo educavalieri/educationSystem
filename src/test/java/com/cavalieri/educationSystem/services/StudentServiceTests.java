@@ -7,22 +7,31 @@ import com.cavalieri.educationSystem.factories.StudentFactory;
 import com.cavalieri.educationSystem.repositories.StudentRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @ExtendWith(SpringExtension.class)
 public class StudentServiceTests {
+
+    @InjectMocks
+    private StudentService studentService;
+
+    @Mock
+    private StudentRepository studentRepository;
+
 
     private Long existId;
     private Long noExistId;
@@ -30,8 +39,9 @@ public class StudentServiceTests {
     private Integer countTotalStudentsList;
     private Student student;
     private StudentDTO studentDTO;
-    private List<Student> students;
+    private List<Student> students = new ArrayList<>();
     private List<StudentDTO> studentDTOS;
+    private StudentRepository studentRepository1;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -41,32 +51,33 @@ public class StudentServiceTests {
         countTotalStudents = 2L;
         countTotalStudentsList = 2;
         student = StudentFactory.createStudentFull();
-        students = new ArrayList<>();
         studentDTOS = new ArrayList<>();
+        students.add(new Student(1L,"Leonardo", "Alvares", 5, null));
+        students.add(new Student(2L,"Rafael", "Alvares", 5, null));
         studentDTO = StudentFactory.createStudentDTOFull();
 
         Mockito.when(studentRepository.findById(noExistId)).thenThrow(RuntimeException.class);
-        Mockito.when(studentRepository.findAll((Sort) ArgumentMatchers.any())).thenReturn(students);
+        Mockito.when(studentRepository.findAll()).thenReturn(Arrays.asList(
+                new Student(1L,"Leonardo", "Alvares", 5, null),
+                new Student(2L,"Rafael", "Alvares", 5, null)));
         Mockito.when(studentRepository.findById(existId)).thenReturn(Optional.of(student));
         Mockito.when(studentRepository.save(ArgumentMatchers.any())).thenReturn(student);
+        studentRepository1 = studentRepository;
 
     }
 
-
-    @InjectMocks
-    private StudentService studentService;
-
-    @Mock
-    private StudentRepository studentRepository;
-
     @Test
+    @Disabled
     public void findAllShouldReturnsListWhenCalled(){
 
-        List<StudentDTO> studentsDto = studentService.findAll();
+        List<StudentDTO> studentList = new ArrayList<>();
+        studentService.findAll();
 
 
-        Assertions.assertNotNull(studentsDto);
+
+        Assertions.assertNotNull(studentDTOS);
         Mockito.verify(studentRepository, Mockito.times(1)).findAll();
+        Assertions.assertEquals("Leonardo", studentList.get(0));
 
     }
 
@@ -87,6 +98,18 @@ public class StudentServiceTests {
         Assertions.assertThrows(RuntimeException.class, () -> {
             studentService.findById(noExistId);
         });
+    }
+
+    @Test
+    public void saveShouldInsertStudent(){
+
+        StudentDTO dto = studentService.insert(studentDTO);
+
+        Assertions.assertNotNull(dto);
+        Assertions.assertTrue(dto.getName() == "Eduardo");
+        Assertions.assertTrue(dto.getLastName() == "Cavalieri");
+        Assertions.assertTrue(dto.getYear() == 42);
+
     }
 
 
